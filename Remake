@@ -1,0 +1,181 @@
+-- Nightmare Mode Script for Roblox Doors
+-- Created by mod & Art Anzor5458
+-- Script assistance from ChatGPT
+
+-- Initialize mod notification
+require(game.Players.LocalPlayer.PlayerGui.MainUI.Initiator.Main_Game).caption("Nightmare Mode activated", true)
+game.ReplicatedStorage.GameData.LatestRoom.Changed:Wait()
+wait(1)
+require(game.Players.LocalPlayer.PlayerGui.MainUI.Initiator.Main_Game).caption("Nightmare Mode", true)
+wait(3)
+
+-- Ahead Entity
+coroutine.wrap(function()
+    while true do
+        wait(100)  -- Fixed 100 second cooldown
+        game.ReplicatedStorage.GameData.LatestRoom.Changed:Wait()
+        wait(2)
+        
+        -- Load entity spawner
+        local spawner = loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/Utilities/main/Doors/Entity%20Spawner/V2/Source.lua"))()
+
+        local Players = game:GetService("Players")
+        local RunService = game:GetService("RunService")
+        local TweenService = game:GetService("TweenService")
+        local player = Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+        -- Create Ahead entity
+        local entity = spawner.Create({
+            Entity = {
+                Name = "Ahead",
+                Asset = "https://github.com/Anzor5458/newdoors/raw/refs/heads/main/nightmare.rbxm",
+                HeightOffset = 0
+            },
+            Movement = {
+                Speed = 0,
+                Delay = 0,
+                Reversed = false
+            },
+            Damage = {
+                Enabled = true,
+                Range = 50,
+                Amount = 15
+            },
+            Crucifixion = {
+                Enabled = false
+            },
+            Death = {
+                Type = "Guiding",
+                Hints = {"Look at it!", "It will hurt if you don't!"},
+                Cause = "Ahead"
+            }
+        })
+
+        -- Internal state
+        local despawned = false
+        local lastTeleport = 0
+        local startRoom = workspace.CurrentRooms:GetChildren()[#workspace.CurrentRooms:GetChildren()]
+        
+        -- Check if player is looking at entity
+        local function lookAtEntity(entityModel)
+            local head = character:FindFirstChild("Head")
+            if not head then return false end
+            local directionToEntity = (entityModel.PrimaryPart.Position - head.Position).Unit
+            local dot = head.CFrame.LookVector:Dot(directionToEntity)
+            return dot > 0.5
+        end
+
+        -- Teleport behavior
+        entity:SetCallback("OnSpawned", function()
+            task.spawn(function()
+                while not despawned do
+                    if tick() - lastTeleport >= 5 then
+                        lastTeleport = tick()
+                        local forward = math.random(1, 2) == 1
+                        local offset = forward and 10 or -10
+                        local newPosition = humanoidRootPart.Position + (humanoidRootPart.CFrame.LookVector * offset)
+                        entity.Model:SetPrimaryPartCFrame(CFrame.new(newPosition))
+                    end
+                    RunService.Heartbeat:Wait()
+                end
+            end)
+
+            -- Damage if not looking
+            task.spawn(function()
+                while not despawned do
+                    if not lookAtEntity(entity.Model) then
+                        humanoidRootPart.Parent:FindFirstChildOfClass("Humanoid").Health -= 15
+                        task.wait(1)
+                    end
+                    task.wait(0.5)
+                end
+            end)
+        end)
+
+        -- Despawn when entering new room
+        local function onRoomAdded()
+            if not despawned then
+                despawned = true
+                entity:Destroy()
+            end
+        end
+
+        workspace.CurrentRooms.ChildAdded:Connect(onRoomAdded)
+        entity:Run()
+    end
+end)()
+
+-- Compression Entity
+coroutine.wrap(function()
+    while true do
+        wait(50)  -- Fixed 50 second cooldown
+        game.ReplicatedStorage.GameData.LatestRoom.Changed:Wait()
+        wait(2)
+        
+        -- Load entity spawner
+        local spawner = loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/Utilities/main/Doors/Entity%20Spawner/V2/Source.lua"))()
+
+        -- Create Compression entity
+        local entity = spawner.Create({
+            Entity = {
+                Name = "Compression",
+                Asset = "https://github.com/Anzor5458/pressure-fan-made/raw/refs/heads/main/entite.rbxm",
+                HeightOffset = 0
+            },
+            Damage = {
+                Enabled = false
+            },
+            Movement = {
+                Speed = 100,
+                Delay = 2
+            },
+            Crucifixion = {
+                Enabled = false
+            },
+            Death = {
+                Type = "Guiding",
+                Hints = {"Don't hide in wardrobes.", "Try under the bed."},
+                Cause = "Compression got you..."
+            }
+        })
+
+        -- Visual effects
+        local lighting = game:GetService("Lighting")
+        local colorCorrection = Instance.new("ColorCorrectionEffect")
+        colorCorrection.Contrast = 0
+        colorCorrection.Name = "CompressionEffect"
+        colorCorrection.Parent = lighting
+
+        -- On spawn behavior
+        entity:SetCallback("OnSpawned", function()
+            local tweenService = game:GetService("TweenService")
+            local tween = tweenService:Create(colorCorrection, TweenInfo.new(5), { Contrast = 1.5 })
+            tween:Play()
+
+            -- Position entity above player
+            local model = workspace:FindFirstChild("Compression")
+            if model and model.PrimaryPart then
+                model:SetPrimaryPartCFrame(CFrame.new(model.PrimaryPart.Position + Vector3.new(0, 30, 0)))
+            end
+
+            -- Auto despawn after 10 seconds
+            task.delay(10, function()
+                if entity and entity.Model then
+                    entity:Destroy()
+                end
+            end)
+        end)
+
+        -- Clean up effects
+        entity:SetCallback("OnDespawned", function()
+            local effect = lighting:FindFirstChild("CompressionEffect")
+            if effect then
+                effect:Destroy()
+            end
+        end)
+
+        entity:Run()
+    end
+end)()
