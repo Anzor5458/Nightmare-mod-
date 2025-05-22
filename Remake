@@ -12,7 +12,7 @@ wait(3)
 -- Ahead Entity
 coroutine.wrap(function()
     while true do
-        wait(100)  -- Fixed 100 second cooldown
+        wait(70)  -- Fixed 100 second cooldown
         game.ReplicatedStorage.GameData.LatestRoom.Changed:Wait()
         wait(2)
         
@@ -110,7 +110,7 @@ end)()
 -- Compression Entity
 coroutine.wrap(function()
     while true do
-        wait(50)  -- Fixed 50 second cooldown
+        wait(200)  -- Fixed 50 second cooldown
         game.ReplicatedStorage.GameData.LatestRoom.Changed:Wait()
         wait(2)
         
