@@ -34,7 +34,7 @@ coroutine.wrap(function()
                 HeightOffset = 0
             },
             Movement = {
-                Speed = 0,
+                Speed = 100,
                 Delay = 0,
                 Reversed = false
             },
